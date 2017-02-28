@@ -20,6 +20,7 @@ from functools import partial
 
 def gpxTracksTo45(gpx_content):
     gpx = gpxpy.parse(gpx_content)
+    ecart45=0
 
     # Check if max and min lat and long are available in metadata.
     
@@ -33,7 +34,14 @@ def gpxTracksTo45(gpx_content):
             previous = segment.points[0]
             for point in segment.points[1:]:
                 print 'Segment:({0},{1}) --> {3},{4}) / {2} --> {5}'.format(previous.latitude,previous.longitude, previous.elevation,point.latitude, point.longitude, point.elevation)
-                # Convert 
+                #  Discard point if going backward
+                #if (false):
+                #else:
+                # Check if segment cross the line
+                # if yes, determine intersection point
+                # Build a polygon with 7 points
+                # else
+                # Build a polygon with 5 points
                 print 'Poly:({0},{1}) --> {2},{3} --> {4},{5} --> {6},{7} --> {8},{9}'.format(previous.longitude,previous.latitude,point.longitude,point.latitude,point.longitude, 45.0, previous.longitude, 45.0,previous.longitude,previous.latitude)
                 poly = Polygon([(previous.longitude,previous.latitude), (point.longitude,point.latitude), (point.longitude, 45.0), (previous.longitude, 45.0), (previous.longitude,previous.latitude)])
                 valid=poly.is_valid
@@ -42,24 +50,20 @@ def gpxTracksTo45(gpx_content):
                 	print valid,area
                 else:
 			print 'Invalid Polygon ...'
-			poly2 = poly.buffer(0)				
-                        poly2.is_valid
-                    	area = getArea(poly2)
                 previous=point
-
+                ecart45=ecart45+area
+               
+    return ecart45
+         
 def getArea(polygon):
 # http://gis.stackexchange.com/questions/127607/area-in-km-from-polygon-of-coordinates
 # Polygon of point using WGS84 lat/lon coordonates
-# lat1, minimum latitude
-# lat2, maximum latitude 
     print 'lat1,lat2:{0},{1}'.format(polygon.bounds[1],polygon.bounds[3])
     project= partial(
             pyproj.transform,
             pyproj.Proj(init='epsg:4326'),
             pyproj.Proj(proj='aea')
             )
-    #            lat1=polygon.bounds[1],
-    #            lat2=polygon.bounds[3]))
 
     geom_area = ops.transform(project,polygon)
 
@@ -69,7 +73,11 @@ def getArea(polygon):
 ##### MAIN ######
 def main():
         gpx_file = open('test1.gpx', 'r')
-        gpxTracksTo45(gpx_file)
+        ecart=0 
+        distance=0 
+        ecart=gpxTracksTo45(gpx_file)
+        print 'ecart total={0}'.format(ecart)
+        print 'distance={0}'.format(distance)
         
 if __name__ == '__main__':
         main()
