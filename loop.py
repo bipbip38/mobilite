@@ -8,9 +8,11 @@
 ######################################################################
 import argparse as mod_argparse
 import math as mod_math
+import sys, getopt
 import gpxpy
 import gpxpy.gpx
 import pyproj    
+import json
 import shapely
 import shapely.ops as ops
 from shapely.geometry.polygon import Polygon
@@ -28,27 +30,39 @@ def gpxTracksTo45(gpx_content):
     breakpoint_lon=0
     wrongdir=False
     # Need to determine overall direction (E->W is positive, W-> E is negative)
-    direction=-1
-    #direction=1
+    bounds = gpx.get_bounds()
+    if (bounds.max_longitude-bounds.min_longitude) > 0:
+       direction=1
+       print "Direction is East to West"
+    else: 
+       direction=-1
+       print "Direction is West to East"
+
     # Loop on all available points (WGS 84)
     for track in gpx.tracks:
         print_gpx_part_info(track, indentation='        ')
         for segment in track.segments:
             previous = segment.points[0]
-            # first point of track is always considered valid, will be used to determine the total distance projected on the 45 parralell
+            # first point of track is always considered valid, will be used to 
+            # determine the total distance projected on the 45 parralell
             firstpoint = segment.points[0]
             for point in segment.points[1:]:
-		print ' # Point with lon/lat {0}/{1}'.format(point.longitude,point.latitude)
+		print '=> Point with lon/lat {0}/{1}'.format(point.longitude,point.latitude)
                 # Discard point if going backward
-                # Hopefully there won't be any track crossing longitude 0 ( which is the atlantic)
+                # Hopefully there won't be any track crossing lon 0 (which is the atlantic)
 
                 if ((point.longitude - previous.longitude)*direction > 0) or ((point.longitude - breakpoint_lon)*direction > 0) :
-			#track is moving in the wrong direction or in the right direction but still not after the breakpoint
+			# track is moving in the wrong direction 
+			# or in the right dir but still not passed the breakpoint
 			print 'Point with lon/lat {0}/{1} has been discarded.'.format(point.longitude,point.latitude)
-                        # Need to capture longitude from which track start moving in the wrong direction
+                        # Need to capture 1st point from which track start
+			# moving in the wrong direction
                         if (wrongdir == False):
 			     breakpoint_lon = previous.longitude
-                             print 'Wait for the lon to be > {0}'.format(breakpoint_lon)
+                             if direction < 0:
+                                 print 'Wait for the lon to be > {0}'.format(breakpoint_lon)
+                             else:
+                                 print 'Wait for the lon to be < {0}'.format(breakpoint_lon)
                         wrongdir=True
                 else:
                         wrongdir=False
@@ -58,17 +72,23 @@ def gpxTracksTo45(gpx_content):
                 	# else
                 	# Build a polygon with 5 points
                 	poly = Polygon([(previous.longitude,previous.latitude), (point.longitude,point.latitude), 
-                                        (point.longitude, 45.0), (previous.longitude, 45.0), (previous.longitude,previous.latitude)])
+                                        (point.longitude, 45.0), (previous.longitude, 45.0),
+				        (previous.longitude,previous.latitude)])
                 	valid=poly.is_valid
 	        	if valid:
                     		area = getArea(poly)
                 		print valid,area
                 		ecart45=ecart45+area
+                                lastpoint = point
                 	else:
 				print 'Invalid Polygon ...'
                 previous=point
     # Calculate distance from first to last (projected on the 45//)
-    lastpoint = point
+    # Projection of the track on the 45//
+    lastpoint.latitude=45.0
+    firstpoint.latitude=45.0
+    print '=> First valid Point lon/lat {0}/{1}'.format(firstpoint.longitude,firstpoint.latitude)
+    print '=> Last valid Point lon/lat {0}/{1}'.format(lastpoint.longitude,lastpoint.latitude)
     distance45 = lastpoint.distance_3d(firstpoint)
 
     return ecart45,distance45
@@ -146,8 +166,26 @@ def make_parser():
     description='Command line utility to extract basic statistics from gpx file(s)')
     return parser
 
-def main():
-        gpx_file = open('test1.gpx', 'r')
+def main(argv):
+	inputfile = ''
+	outputfile = ''
+	try:
+	   opts, args = getopt.getopt(argv,"hi:o:",["ifile=","ofile="])
+	except getopt.GetoptError:
+   		print 'loop.py -i <inputfile> -o <outputfile>'
+   		sys.exit(2)
+	for opt, arg in opts:
+          if opt == '-h':
+      		print 'loop.py -i <inputfile> -o <outputfile>'
+                sys.exit()
+          elif opt in ("-i", "--ifile"):
+      		inputfile = arg
+          elif opt in ("-o", "--ofile"):
+                outputfile = arg
+        print 'Input file is "', inputfile
+        print 'Output file is "', outputfile
+
+        gpx_file = open(inputfile, 'r')
         ecart=0 
         distance=0 
         ecart,distance=gpxTracksTo45(gpx_file)
@@ -156,5 +194,5 @@ def main():
         score= ecart/distance
         print 'score={0}'.format(round(score,2))
 if __name__ == '__main__':
-        main()
+        main(sys.argv[1:])
 

@@ -1,0 +1,38 @@
+{"type":"FeatureCollection",
+  "features":[
+    {"type":"Feature",
+     "id":"201703091445-1",
+     "properties": {"name": "diffarea"},
+     "geometry":{"type":"MultiPolygon",
+     "coordinates":[
+         [[[5.6495672,45.07],[5.96716,45.07],[5.96716,44.99],[5.6495672,44.99]
+         ]]]
+      }
+    },
+    { "type": "Feature",
+      "id":"201703091445-2",
+      "properties": {"name": "projection"},
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [5.6495672,45.0],[5.96716,45.00],[5.96716,45.0],[5.6495672,45.0]
+          ]
+        }
+    },
+    { "type": "Feature",
+      "id":"201703091445-3",
+      "properties": {"name": "start"},
+      "geometry": {
+        "type": "Point",
+        "coordinates": [5.6495672,45.0]
+        }
+    },
+    { "type": "Feature",
+      "id":"201703091445-3",
+      "properties": {"name": "end"},
+      "geometry": {
+        "type": "Point",
+        "coordinates": [5.96716,45.0]
+        }
+    }  
+]}

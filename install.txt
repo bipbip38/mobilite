@@ -1,0 +1,20 @@
+#1 Install gpxpy python library:
+
+cd gpxpy-master
+python setup.py install
+
+#2 Install pyproj python Library
+pip install pyproj
+ou:
+wget https://codeload.github.com/jswhit/pyproj/zip/master
+
+cd pyproj-master
+python setup.py install (require gcc)
+
+#3 Manivelle (2/28) under cv [i.e workon cv]
+pip install gpxpy
+
+pip install pyproj
+
+sudo apt-get install libgeos-dev 
+pip install shapely
