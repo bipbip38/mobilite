@@ -16,6 +16,7 @@ import json
 import shapely
 import shapely.ops as ops
 from shapely.geometry.polygon import Polygon
+from shapely.geometry import Point,LineString,MultiPolygon,mapping
 from functools import partial
 
 
@@ -29,6 +30,10 @@ def gpxTracksTo45(gpx_content):
     distance45=0
     breakpoint_lon=0
     wrongdir=False
+
+    # Process the total uphill/downhill elevation for the given track
+    uphill, downhill = gpx.get_uphill_downhill()
+
     # Need to determine overall direction (E->W is positive, W-> E is negative)
     bounds = gpx.get_bounds()
     if (bounds.max_longitude-bounds.min_longitude) > 0:
@@ -38,6 +43,14 @@ def gpxTracksTo45(gpx_content):
        direction=-1
        print "Direction is West to East"
 
+    # initialize  a geo json dictionary to store result of the processing
+    gjson_dict={}
+    gjson_dict["type"]= "FeatureCollection"
+    feat_list = []
+
+    # Initialize a list to store all calculatd polygons
+    multi = []
+
     # Loop on all available points (WGS 84)
     for track in gpx.tracks:
         print_gpx_part_info(track, indentation='        ')
@@ -46,12 +59,14 @@ def gpxTracksTo45(gpx_content):
             # first point of track is always considered valid, will be used to 
             # determine the total distance projected on the 45 parralell
             firstpoint = segment.points[0]
+	    print '=> First Point with lon/lat {0}/{1}'.format(firstpoint.longitude,firstpoint.latitude)
             for point in segment.points[1:]:
 		print '=> Point with lon/lat {0}/{1}'.format(point.longitude,point.latitude)
                 # Discard point if going backward
                 # Hopefully there won't be any track crossing lon 0 (which is the atlantic)
 
-                if ((point.longitude - previous.longitude)*direction > 0) or ((point.longitude - breakpoint_lon)*direction > 0) :
+                if ((point.longitude - previous.longitude)*direction > 0) 
+                      or ((point.longitude - breakpoint_lon)*direction > 0):
 			# track is moving in the wrong direction 
 			# or in the right dir but still not passed the breakpoint
 			print 'Point with lon/lat {0}/{1} has been discarded.'.format(point.longitude,point.latitude)
@@ -80,18 +95,79 @@ def gpxTracksTo45(gpx_content):
                 		print valid,area
                 		ecart45=ecart45+area
                                 lastpoint = point
+                                # Add polygon to the multipolygon for displaying the calculated area
+                                multi.append(poly)
                 	else:
 				print 'Invalid Polygon ...'
                 previous=point
+    # End looping on points in the track
+
     # Calculate distance from first to last (projected on the 45//)
     # Projection of the track on the 45//
     lastpoint.latitude=45.0
     firstpoint.latitude=45.0
-    print '=> First valid Point lon/lat {0}/{1}'.format(firstpoint.longitude,firstpoint.latitude)
-    print '=> Last valid Point lon/lat {0}/{1}'.format(lastpoint.longitude,lastpoint.latitude)
+    print '=> First valid Point lon/lat {0}/{1} time {2}'.format(firstpoint.longitude,firstpoint.latitude,firstpoint.time)
+    print '=> Last valid Point lon/lat {0}/{1} time {2}'.format(lastpoint.longitude,lastpoint.latitude,lastpoint.time)
     distance45 = lastpoint.distance_3d(firstpoint)
+    # There is bonus for uphill gain
+    score= ecart45/(distance45+(uphill*10))
 
-    return ecart45,distance45
+    print 'ecart total={0} m2'.format(round(ecart45,0))
+    print 'distance={0} m'.format(round(distance45,0))
+    print 'cumulative elevation gain= m'.format(round(distance45,0))
+    print 'score={0}'.format(round(score,2))
+
+    p1=Point(firstpoint.longitude,firstpoint.latitude)
+    p2=Point(lastpoint.longitude,lastpoint.latitude)
+    
+    # Add two markers for start and end of the projected distance
+    type_dict = {}
+    pt_dict = {}
+    prop_dict = {}
+    type_dict["type"]= "Feature"
+    pt_dict["type"]="Point"
+    type_dict["geometry"]=mapping(p2)
+    prop_dict["name"]= 'end'
+    prop_dict["popup"]=lastpoint.time 
+    type_dict["properties"]=prop_dict
+    feat_list.append(type_dict)
+
+    type_dict = {}
+    pt_dict = {}
+    prop_dict = {}
+    type_dict["type"]= "Feature"
+    pt_dict["type"]="Point"
+    type_dict["geometry"]=mapping(p1)
+    prop_dict["name"]= 'start'
+    prop_dict["popup"]=firstpoint.time 
+    type_dict["properties"]=prop_dict
+    feat_list.append(type_dict)
+ 
+    # Add a line in between the two markers
+    type_dict = {}
+    pt_dict = {}
+    prop_dict = {}
+    type_dict["type"]= "Feature"
+    pt_dict["type"]="LineString"
+    type_dict["geometry"]=mapping(LineString([p1,p2]]))
+    prop_dict["name"]= 'projection'
+    prop_dict["popup"]= 'distance={0} m'.format(round(distance45,0))
+    type_dict["properties"]=prop_dict
+    feat_list.append(type_dict)
+
+    type_dict = {}
+    pt_dict = {}
+    prop_dict = {}
+    type_dict["type"]= "Feature"
+    pt_dict["type"]="MultiPolygon"
+    gjson_dict["features"] = feat_list
+    type_dict["geometry"]=mapping(MultiPolygon(poly))
+    prop_dict["name"]= 'area'
+    prop_dict["popup"]='ecart total={0} m2<br>distance={1} m<br>uphill={2} m<br> score={3}'.format(round(ecart45,0), round(distance45,0),round(distance45,0),round(score,2))
+    type_dict["properties"]=prop_dict
+    feat_list.append(type_dict)
+
+    return gjson_dict
          
 ######################################################################
 #
@@ -182,17 +258,21 @@ def main(argv):
       		inputfile = arg
           elif opt in ("-o", "--ofile"):
                 outputfile = arg
+        if outputfile=-'':
+            outputfile='out.json'
+
         print 'Input file is "', inputfile
         print 'Output file is "', outputfile
 
         gpx_file = open(inputfile, 'r')
         ecart=0 
         distance=0 
-        ecart,distance=gpxTracksTo45(gpx_file)
-        print 'ecart total={0} m2'.format(round(ecart,0))
-        print 'distance={0} m'.format(round(distance,0))
-        score= ecart/distance
-        print 'score={0}'.format(round(score,2))
+        geojson=gpxTracksTo45(gpx_file)
+        # Dump serializaed geo json dictionnary
+        with open(outputfile, 'w') as outfile:
+             json.dump(geojson, outfile, sort_keys = True, indent = 4,
+		   ensure_ascii=False)
+ 
 if __name__ == '__main__':
         main(sys.argv[1:])
 
