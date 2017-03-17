@@ -13,6 +13,7 @@ import gpxpy
 import gpxpy.gpx
 import pyproj    
 import json
+import datetime,time
 import shapely
 import shapely.ops as ops
 from shapely.geometry.polygon import Polygon
@@ -65,8 +66,7 @@ def gpxTracksTo45(gpx_content):
                 # Discard point if going backward
                 # Hopefully there won't be any track crossing lon 0 (which is the atlantic)
 
-                if ((point.longitude - previous.longitude)*direction > 0) 
-                      or ((point.longitude - breakpoint_lon)*direction > 0):
+                if ((point.longitude - previous.longitude)*direction > 0) or ((point.longitude - breakpoint_lon)*direction > 0):
 			# track is moving in the wrong direction 
 			# or in the right dir but still not passed the breakpoint
 			print 'Point with lon/lat {0}/{1} has been discarded.'.format(point.longitude,point.latitude)
@@ -128,7 +128,7 @@ def gpxTracksTo45(gpx_content):
     pt_dict["type"]="Point"
     type_dict["geometry"]=mapping(p2)
     prop_dict["name"]= 'end'
-    prop_dict["popup"]=lastpoint.time 
+    prop_dict["popup"]=lastpoint.time.strftime("%d %b %Y %H:%M")
     type_dict["properties"]=prop_dict
     feat_list.append(type_dict)
 
@@ -139,7 +139,7 @@ def gpxTracksTo45(gpx_content):
     pt_dict["type"]="Point"
     type_dict["geometry"]=mapping(p1)
     prop_dict["name"]= 'start'
-    prop_dict["popup"]=firstpoint.time 
+    prop_dict["popup"]=firstpoint.time.strftime("%d %b %Y %H:%M")
     type_dict["properties"]=prop_dict
     feat_list.append(type_dict)
  
@@ -149,7 +149,7 @@ def gpxTracksTo45(gpx_content):
     prop_dict = {}
     type_dict["type"]= "Feature"
     pt_dict["type"]="LineString"
-    type_dict["geometry"]=mapping(LineString([p1,p2]]))
+    type_dict["geometry"]=mapping(LineString([p1,p2]))
     prop_dict["name"]= 'projection'
     prop_dict["popup"]= 'distance={0} m'.format(round(distance45,0))
     type_dict["properties"]=prop_dict
@@ -161,11 +161,11 @@ def gpxTracksTo45(gpx_content):
     type_dict["type"]= "Feature"
     pt_dict["type"]="MultiPolygon"
     gjson_dict["features"] = feat_list
-    type_dict["geometry"]=mapping(MultiPolygon(poly))
+    #type_dict["geometry"]=mapping(MultiPolygon(poly))
     prop_dict["name"]= 'area'
     prop_dict["popup"]='ecart total={0} m2<br>distance={1} m<br>uphill={2} m<br> score={3}'.format(round(ecart45,0), round(distance45,0),round(distance45,0),round(score,2))
     type_dict["properties"]=prop_dict
-    feat_list.append(type_dict)
+#    feat_list.append(type_dict)
 
     return gjson_dict
          
@@ -258,7 +258,7 @@ def main(argv):
       		inputfile = arg
           elif opt in ("-o", "--ofile"):
                 outputfile = arg
-        if outputfile=-'':
+        if outputfile=='':
             outputfile='out.json'
 
         print 'Input file is "', inputfile
