@@ -38,18 +38,18 @@ def gpxTracksTo45(gpx_content):
     # Need to determine overall direction (E->W is positive, W-> E is negative)
     bounds = gpx.get_bounds()
     if (bounds.max_longitude-bounds.min_longitude) > 0:
+       # Direction is East to West
        direction=1
-       print "Direction is East to West"
     else: 
+       #Direction is West to East"
        direction=-1
-       print "Direction is West to East"
 
     # initialize  a geo json dictionary to store result of the processing
     gjson_dict={}
     gjson_dict["type"]= "FeatureCollection"
     feat_list = []
 
-    # Initialize a list to store all valid points
+    # Initialize a list to store all valid points to build a polygon for the area
     pointlist = []
 
     # Loop on all available points (WGS 84)
@@ -61,11 +61,11 @@ def gpxTracksTo45(gpx_content):
             # determine the total distance projected on the 45 parralell
             firstpoint = segment.points[0]
 
-            # First point projected on the 45th line    
+            # First point projected on the 45th line (will be used to build the line)
             pointzero = Point(firstpoint.longitude,45.0)
-            pointone = Point(firstpoint.longitude,firstpoint.latitude)
             pointlist.append(pointzero)
-            pointlist.append(pointone)
+
+            pointlist.append(Point(firstpoint.longitude,firstpoint.latitude))
 
             for point in segment.points[1:]:
                 # Discard point if going backward
@@ -81,39 +81,30 @@ def gpxTracksTo45(gpx_content):
                         wrongdir=True
                 else:
                         wrongdir=False
-                	# Check if segment cross the line
-                	# if yes, determine intersection point
-                	# Build a polygon with 7 points
-                	# else
-                	# Build a polygon with 5 points
-                	poly = Polygon([(previous.longitude,previous.latitude), (point.longitude,point.latitude), 
-                                        (point.longitude, 45.0), (previous.longitude, 45.0),
-				        (previous.longitude,previous.latitude)])
-#                	valid=poly.is_valid
-#	        	if valid:
                         lastpoint = point
-                        thepoint = Point(point.longitude,point.latitude)
-                        pointlist.append(thepoint)
+                        pointlist.append(Point(point.longitude,point.latitude))
                 previous=point
 
     # End looping on points in the track
      
     # Calculate distance from first to last (projected on the 45//)
     # Projection of the track on the 45//
-    lastpoint.latitude=45.0
-    thelastpoint = Point(lastpoint.longitude,lastpoint.latitude)
+
+    # Build a Point for the last point projected onthe 45
+    thelastpoint = Point(lastpoint.longitude,45.0)
     pointlist.append(thelastpoint)
 
     newpoly=Polygon([[p.x, p.y] for p in pointlist])
 
+    lastpoint.latitude=45.0
     firstpoint.latitude=45.0
-    print firstpoint.time
+
     if firstpoint.time is None:
-        starttime=''
+        starttime='no datetime<b>found within the track'
     else:
         starttime=firstpoint.time.strftime("%d %b %Y %H:%M")
     if lastpoint.time is None:
-        endtime=''
+        endtime='no datetime<b>found within the track'
     else:
         endtime=lastpoint.time.strftime("%d %b %Y %H:%M")
 
@@ -123,8 +114,8 @@ def gpxTracksTo45(gpx_content):
     score= ecart45/(distance45+(uphill*10))
 
     print 'ecart total={0} m2'.format(round(ecart45,0))
-    print 'distance={0} m'.format(round(distance45,0))
-    print 'cumulative elevation gain= m'.format(round(distance45,0))
+    print 'distance={0:.0f} m'.format(round(distance45,0))
+    print 'cumulative elevation gain={0} m'.format(round(uphill,0))
     print 'score={0}'.format(round(score,2))
 
     # Add two markers for start and end of the projected distance
@@ -158,7 +149,7 @@ def gpxTracksTo45(gpx_content):
     pt_dict["type"]="LineString"
     type_dict["geometry"]=mapping(LineString([pointzero,thelastpoint]))
     prop_dict["name"]= 'projection'
-    prop_dict["popup"]= 'distance={0} m'.format(round(distance45,0))
+    prop_dict["popup"]= 'distance={0:.0f} m'.format(round(distance45,0))
     type_dict["properties"]=prop_dict
     feat_list.append(type_dict)
 
@@ -171,7 +162,7 @@ def gpxTracksTo45(gpx_content):
     gjson_dict["features"] = feat_list
     type_dict["geometry"]=mapping(Polygon(newpoly))
     prop_dict["name"]= 'area'
-    prop_dict["popup"]='ecart total={0} m2<br>distance={1} m<br>uphill={2} m<br> score={3}'.format(round(ecart45,0), round(distance45,0),round(distance45,0),round(score,2))
+    prop_dict["popup"]='ecart total={0:.0f} m2<br>distance={1:.0f} m<br>uphill={2:.0f} m<br><b>score={3:.0f} points</b>'.format(round(ecart45,0), round(distance45,0),round(uphill,0),round(score,2))
     type_dict["properties"]=prop_dict
     feat_list.append(type_dict)
 
@@ -268,9 +259,6 @@ def main(argv):
                 outputfile = arg
         if outputfile=='':
             outputfile='out.json'
-
-        print 'Input file is "', inputfile
-        print 'Output file is "', outputfile
 
         gpx_file = open(inputfile, 'r')
         ecart=0 
