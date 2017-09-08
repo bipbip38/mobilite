@@ -1,6 +1,10 @@
 <html>
 <head>
 	<title>The Line IShERE</title>
+    <style type="text/css"> 
+    html, body { padding: 0px; margin: 0px; width: 100%; height: 100%; }
+    #div { min-height: 100%; background-color: gray; }
+    </style>
     <meta charset="utf-8" />
 	<link rel="stylesheet" href="http://unpkg.com/leaflet@1.0.3/dist/leaflet.css" />
 	<script src="http://unpkg.com/leaflet@1.0.3/dist/leaflet.js"></script>
@@ -68,11 +72,12 @@
         // the projected distance on the parralell
         // start/end projected distance.
         
-        var geojson=$.getJSON('ornon-foot-google.geo.json',function(data) {addDataToMap(data, map); });  
+        var geojson=$.getJSON('ornon-foot-google.json',function(data) {addDataToMap(data, map); });  
         
         // Defne the background map
         var osm = new L.TileLayer('http://a.tiles.wmflabs.org/hikebike/{z}/{x}/{y}.png');
-		
+
+        
         // ------ Load the track --------
         // placeholder to store the geometry of the track
         feat_gpx =  new L.featureGroup(); 

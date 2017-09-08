@@ -10,7 +10,7 @@
             }, 
             "properties": {
                 "name": "end", 
-                "popup": ""
+                "popup": "no datetime<b>found within the track"
             }, 
             "type": "Feature"
         }, 
@@ -24,7 +24,7 @@
             }, 
             "properties": {
                 "name": "start", 
-                "popup": ""
+                "popup": "no datetime<b>found within the track"
             }, 
             "type": "Feature"
         }, 
@@ -44,7 +44,7 @@
             }, 
             "properties": {
                 "name": "projection", 
-                "popup": "distance=24996.0 m"
+                "popup": "distance=24996 m"
             }, 
             "type": "Feature"
         }, 
@@ -9210,7 +9210,7 @@
             }, 
             "properties": {
                 "name": "area", 
-                "popup": "ecart total=80949258.0 m2<br>distance=24996.0 m<br>uphill=24996.0 m<br> score=3238.51"
+                "popup": "<b>score=3239 points</b><hr>surface=80949258 m2<br>distance=24996 m<br>denivel&eacute;e=0 m<br>"
             }, 
             "type": "Feature"
         }

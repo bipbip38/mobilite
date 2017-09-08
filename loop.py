@@ -35,15 +35,6 @@ def gpxTracksTo45(gpx_content):
     # Process the total uphill/downhill elevation for the given track
     uphill, downhill = gpx.get_uphill_downhill()
 
-    # Need to determine overall direction (E->W is positive, W-> E is negative)
-    bounds = gpx.get_bounds()
-    if (bounds.max_longitude-bounds.min_longitude) > 0:
-       # Direction is East to West
-       direction=1
-    else: 
-       #Direction is West to East"
-       direction=-1
-
     # initialize  a geo json dictionary to store result of the processing
     gjson_dict={}
     gjson_dict["type"]= "FeatureCollection"
@@ -51,6 +42,26 @@ def gpxTracksTo45(gpx_content):
 
     # Initialize a list to store all valid points to build a polygon for the area
     pointlist = []
+
+    # Need to determine overall direction (E->W is positive, W-> E is negative)
+    # overall direction is determine by first and last point, regardless of the 
+    # max or min longitude.
+    # First determin first and last
+    # Loop on all available points (WGS 84)
+    for track in gpx.tracks:
+        for segment in track.segments:
+            previous = segment.points[0]
+            firstpoint = segment.points[0]
+            for point in segment.points[1:]:
+                 lastpoint = point
+    # End looping on points in the tracks
+
+    if (lastpoint.longitude-firstpoint.longitude) < 0:
+	print 'Direction is East to West'
+       	direction=1
+    else: 
+    	print 'Direction is West to East'
+       	direction=-1
 
     # Loop on all available points (WGS 84)
     for track in gpx.tracks:
@@ -116,7 +127,7 @@ def gpxTracksTo45(gpx_content):
     print 'ecart total={0} m2'.format(round(ecart45,0))
     print 'distance={0:.0f} m'.format(round(distance45,0))
     print 'cumulative elevation gain={0} m'.format(round(uphill,0))
-    print 'score={0}'.format(round(score,2))
+    print 'score={0}'.format(round(score,1))
 
     # Add two markers for start and end of the projected distance
     type_dict = {}
@@ -162,7 +173,7 @@ def gpxTracksTo45(gpx_content):
     gjson_dict["features"] = feat_list
     type_dict["geometry"]=mapping(Polygon(newpoly))
     prop_dict["name"]= 'area'
-    prop_dict["popup"]='ecart total={0:.0f} m2<br>distance={1:.0f} m<br>uphill={2:.0f} m<br><b>score={3:.0f} points</b>'.format(round(ecart45,0), round(distance45,0),round(uphill,0),round(score,2))
+    prop_dict["popup"]='<b>score={0:.0f} points</b><hr>surface={1:.0f} m2<br>distance={2:.0f} m<br>denivel&eacute;e={3:.0f} m<br>'.format(round(score,0), round(ecart45,0),round(distance45,0),round(uphill,0))
     type_dict["properties"]=prop_dict
     feat_list.append(type_dict)
 
