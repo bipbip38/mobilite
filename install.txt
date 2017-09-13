@@ -18,3 +18,7 @@ pip install pyproj
 
 sudo apt-get install libgeos-dev 
 pip install shapely
+
+
+#4 Usage: workon cv 
+          pyhton loop.py -i filename.gpx -o filename.json
