@@ -5,6 +5,10 @@
 # * $Revision:  $
 # * $Date:  $
 # * Created By: ldo
+# Script to build a report(json) from a track (gpx) for the very unique
+# "45 challenge". It includes amongst other things:
+# - delimiting the area in between the track and the 45 parrallel
+# - a score calculation using the distance and the elevation gain
 ######################################################################
 import argparse as mod_argparse
 import math as mod_math
@@ -31,6 +35,10 @@ def gpxTracksTo45(gpx_content):
     distance45=0
     breakpoint_lon=0
     wrongdir=False
+    area=0
+    temparea=0
+
+    now = datetime.datetime.today().strftime('%Y-%m-%d %hh:%mm')
 
     # Process the total uphill/downhill elevation for the given track
     uphill, downhill = gpx.get_uphill_downhill()
@@ -42,6 +50,8 @@ def gpxTracksTo45(gpx_content):
 
     # Initialize a list to store all valid points to build a polygon for the area
     pointlist = []
+    # Initialize a list to buffer point before calculating intermediate area
+    templist = []
 
     # Need to determine overall direction (E->W is positive, W-> E is negative)
     # overall direction is determine by first and last point, regardless of the 
@@ -71,12 +81,14 @@ def gpxTracksTo45(gpx_content):
             # first point of track is always considered valid, will be used to 
             # determine the total distance projected on the 45 parralell
             firstpoint = segment.points[0]
+            lastpoint = segment.points[0]
 
             # First point projected on the 45th line (will be used to build the line)
             pointzero = Point(firstpoint.longitude,45.0)
             pointlist.append(pointzero)
-
             pointlist.append(Point(firstpoint.longitude,firstpoint.latitude))
+            templist.append(pointzero)
+            templist.append(Point(firstpoint.longitude,firstpoint.latitude))
 
             for point in segment.points[1:]:
                 # Discard point if going backward
@@ -88,12 +100,35 @@ def gpxTracksTo45(gpx_content):
                         # Need to capture 1st point from which track start
 			# moving in the wrong direction
                         if (wrongdir == False):
-			     breakpoint_lon = previous.longitude
+			                 breakpoint_lon = previous.longitude
                         wrongdir=True
                 else:
                         wrongdir=False
+                        # Check if segment is crossing the 45// ?
+                        if ((lastpoint.latitude<45.0 and point.latitude >= 45.0) or (lastpoint.latitude>45.0 and point.latitude <= 45.0)):
+                              print 'Crossing detected before long/lat: {:.6f}/{:.6f}'.format(point.longitude,point.latitude)
+                              # Set aside a polygon without intersection and calculate area
+                              # first build a Point for the intersect on the 45
+                              # use Thales ...
+                              intersectlon=point.longitude-((point.longitude-lastpoint.longitude)*((45.0-point.latitude)/(lastpoint.latitude-point.latitude)))
+                              print 'Crossing detected at longitude: {:.6f}'.format(intersectlon)
+                              intersectpoint = Point(intersectlon,45.0)
+                              templist.append(intersectpoint)
+                              pointlist.append(Point(point.longitude,point.latitude))
+    
+                              # Build a polygon from the temporary list of points
+                              temppoly=Polygon([[p.x, p.y] for p in templist])
+                              temparea = getArea(temppoly)
+                              print 'Temp area to add: {:.0f} m2'.format(temparea)
+                              area = area + temparea
+                              # reset templist
+                              templist = []
+                              templist.append(intersectpoint)
+                              
+                        # save current point in lastpoint
                         lastpoint = point
                         pointlist.append(Point(point.longitude,point.latitude))
+                        templist.append(Point(point.longitude,point.latitude))
                 previous=point
 
     # End looping on points in the track
@@ -104,7 +139,14 @@ def gpxTracksTo45(gpx_content):
     # Build a Point for the last point projected onthe 45
     thelastpoint = Point(lastpoint.longitude,45.0)
     pointlist.append(thelastpoint)
-
+    templist.append(thelastpoint)
+    # Build the latest polygon 
+    temppoly=Polygon([[p.x, p.y] for p in templist])
+    temparea = getArea(temppoly)
+    print '(Last)Temp area to add: {:.0f} m2'.format(temparea)
+    area = area + temparea
+    
+    #Build a polygon from the list of points
     newpoly=Polygon([[p.x, p.y] for p in pointlist])
 
     lastpoint.latitude=45.0
@@ -121,10 +163,13 @@ def gpxTracksTo45(gpx_content):
 
     distance45 = lastpoint.distance_3d(firstpoint)
     ecart45 = getArea(newpoly)
+    area_km2 = area / 1000000 
     # There is bonus for uphill gain
     score= ecart45/(distance45+(uphill*10))
 
     print 'ecart total={0} m2'.format(round(ecart45,0))
+    print 'area total={0} m2'.format(round(area,0))
+    print 'area total={0} km2'.format(round(area_km2,0))
     print 'distance={0:.0f} m'.format(round(distance45,0))
     print 'cumulative elevation gain={0} m'.format(round(uphill,0))
     print 'score={0}'.format(round(score,1))
@@ -173,7 +218,7 @@ def gpxTracksTo45(gpx_content):
     gjson_dict["features"] = feat_list
     type_dict["geometry"]=mapping(Polygon(newpoly))
     prop_dict["name"]= 'area'
-    prop_dict["popup"]='<b>score={0:.0f} points</b><hr>surface={1:.0f} m2<br>distance={2:.0f} m<br>denivel&eacute;e={3:.0f} m<br>'.format(round(score,0), round(ecart45,0),round(distance45,0),round(uphill,0))
+    prop_dict["popup"]='<b>score={0:.0f} points</b><hr>surface={1:.0f} m2<br>distance={2:.0f} m<br>denivel&eacute;e={3:.0f} m<br><br><i>calculated on:</i>'.format(round(score,0), round(ecart45,0),round(distance45,0),round(uphill,0))
     type_dict["properties"]=prop_dict
     feat_list.append(type_dict)
 
