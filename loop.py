@@ -38,6 +38,7 @@ def gpxTracksTo45(gpx_content):
     area=0
     temparea=0
 
+    version='20171810-a-1'
     now = datetime.datetime.today().strftime('%Y-%m-%d %hh:%mm')
 
     # Process the total uphill/downhill elevation for the given track
@@ -77,18 +78,19 @@ def gpxTracksTo45(gpx_content):
     for track in gpx.tracks:
         print_gpx_part_info(track, indentation='        ')
         for segment in track.segments:
-            previous = segment.points[0]
+
             # first point of track is always considered valid, will be used to 
             # determine the total distance projected on the 45 parralell
             firstpoint = segment.points[0]
-            lastpoint = segment.points[0]
+            previous = firstpoint    
+            lastpoint = firstpoint
 
             # First point projected on the 45th line (will be used to build the line)
             pointzero = Point(firstpoint.longitude,45.0)
             pointlist.append(pointzero)
-            pointlist.append(Point(firstpoint.longitude,firstpoint.latitude))
+            pointlist.append(firstpoint)
             templist.append(pointzero)
-            templist.append(Point(firstpoint.longitude,firstpoint.latitude))
+            templist.append(firstpoint)
 
             for point in segment.points[1:]:
                 # Discard point if going backward
@@ -96,9 +98,8 @@ def gpxTracksTo45(gpx_content):
 
                 if ((point.longitude - previous.longitude)*direction > 0) or ((point.longitude - breakpoint_lon)*direction > 0):
 			# track is moving in the wrong direction 
-			# or in the right dir but still not passed the breakpoint
-                        # Need to capture 1st point from which track start
-			# moving in the wrong direction
+			# or in the right direction but still not passed the breakpoint
+
                         if (wrongdir == False):
 			                 breakpoint_lon = previous.longitude
                         wrongdir=True
@@ -106,10 +107,10 @@ def gpxTracksTo45(gpx_content):
                         wrongdir=False
                         # Check if segment is crossing the 45// ?
                         if ((lastpoint.latitude<45.0 and point.latitude >= 45.0) or (lastpoint.latitude>45.0 and point.latitude <= 45.0)):
-                              print 'Crossing detected before long/lat: {:.6f}/{:.6f}'.format(point.longitude,point.latitude)
+                              print 'Crossing detected before: {:.7f}/{:.7f}  after {:.7f}/{:.7f} '.format(point.longitude,point.latitude,lastpoint.longitude,lastpoint.latitude)
                               # Set aside a polygon without intersection and calculate area
                               # first build a Point for the intersect on the 45
-                              # use Thales ...
+                              # use Thales to determine where segment cross the //
                               intersectlon=point.longitude-((point.longitude-lastpoint.longitude)*((45.0-point.latitude)/(lastpoint.latitude-point.latitude)))
                               print 'Crossing detected at longitude: {:.6f}'.format(intersectlon)
                               intersectpoint = Point(intersectlon,45.0)
@@ -119,7 +120,7 @@ def gpxTracksTo45(gpx_content):
                               # Build a polygon from the temporary list of points
                               temppoly=Polygon([[p.x, p.y] for p in templist])
                               temparea = getArea(temppoly)
-                              print 'Temp area to add: {:.0f} m2'.format(temparea)
+                              print 'Buffering temprary area: {:.0f} m2'.format(temparea)
                               area = area + temparea
                               # reset templist
                               templist = []
@@ -218,7 +219,7 @@ def gpxTracksTo45(gpx_content):
     gjson_dict["features"] = feat_list
     type_dict["geometry"]=mapping(Polygon(newpoly))
     prop_dict["name"]= 'area'
-    prop_dict["popup"]='<b>score={0:.0f} points</b><hr>surface={1:.0f} m2<br>distance={2:.0f} m<br>denivel&eacute;e={3:.0f} m<br><br><i>calculated on:</i>'.format(round(score,0), round(ecart45,0),round(distance45,0),round(uphill,0))
+    prop_dict["popup"]='<b>score={0:.0f} points</b><hr>surface={1:.0f} m2<br>distance={2:.0f} m<br>denivel&eacute;e={3:.0f} m<br><br><i>calculated on {} by version {}</i>'.format(round(score,0), round(ecart45,0),round(distance45,0),round(uphill,0),now,version)
     type_dict["properties"]=prop_dict
     feat_list.append(type_dict)
 
