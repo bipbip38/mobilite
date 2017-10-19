@@ -62,7 +62,7 @@ def gpxTracksTo45(gpx_content):
     for track in gpx.tracks:
         for segment in track.segments:
             previous = segment.points[0]
-            firstpoint = segment.points[0]
+            firstpoint = previous
             for point in segment.points[1:]:
                  lastpoint = point
     # End looping on points in the tracks
@@ -78,19 +78,18 @@ def gpxTracksTo45(gpx_content):
     for track in gpx.tracks:
         print_gpx_part_info(track, indentation='        ')
         for segment in track.segments:
-
             # first point of track is always considered valid, will be used to 
             # determine the total distance projected on the 45 parralell
-            firstpoint = segment.points[0]
-            previous = firstpoint    
-            lastpoint = firstpoint
+            previous = segment.points[0]
+            firstpoint = previous
+            lastpoint = previous
 
             # First point projected on the 45th line (will be used to build the line)
             pointzero = Point(firstpoint.longitude,45.0)
             pointlist.append(pointzero)
-            pointlist.append(firstpoint)
+            pointlist.append(Point(firstpoint.longitude,firstpoint.latitude))
             templist.append(pointzero)
-            templist.append(firstpoint)
+            templist.append(Point(firstpoint.longitude,firstpoint.latitude))
 
             for point in segment.points[1:]:
                 # Discard point if going backward
@@ -219,7 +218,7 @@ def gpxTracksTo45(gpx_content):
     gjson_dict["features"] = feat_list
     type_dict["geometry"]=mapping(Polygon(newpoly))
     prop_dict["name"]= 'area'
-    prop_dict["popup"]='<b>score={0:.0f} points</b><hr>surface={1:.0f} m2<br>distance={2:.0f} m<br>denivel&eacute;e={3:.0f} m<br><br><i>calculated on {} by version {}</i>'.format(round(score,0), round(ecart45,0),round(distance45,0),round(uphill,0),now,version)
+    prop_dict["popup"]='<b>score={0:.0f} points</b><hr>surface={1:.0f} m2<br>distance={2:.0f} m<br>denivel&eacute;e={3:.0f} m<br><br><i>calculated on {4:} by version {5:}</i>'.format(round(score,0), round(ecart45,0),round(distance45,0),round(uphill,0),now,version)
     type_dict["properties"]=prop_dict
     feat_list.append(type_dict)
 
