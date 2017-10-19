@@ -39,7 +39,7 @@ def gpxTracksTo45(gpx_content):
     temparea=0
 
     version='20171810-a-1'
-    now = datetime.datetime.today().strftime('%Y-%m-%d %hh:%mm')
+    now = datetime.datetime.today().strftime('%Y-%m-%d %H:%M')
 
     # Process the total uphill/downhill elevation for the given track
     uphill, downhill = gpx.get_uphill_downhill()
@@ -218,7 +218,7 @@ def gpxTracksTo45(gpx_content):
     gjson_dict["features"] = feat_list
     type_dict["geometry"]=mapping(Polygon(newpoly))
     prop_dict["name"]= 'area'
-    prop_dict["popup"]='<b>score={0:.0f} points</b><hr>surface={1:.0f} m2<br>distance={2:.0f} m<br>denivel&eacute;e={3:.0f} m<br><br><i>calculated on {4:} by version {5:}</i>'.format(round(score,0), round(ecart45,0),round(distance45,0),round(uphill,0),now,version)
+    prop_dict["popup"]='<b>score={0:.0f} points</b><hr>surface={1:.0f} m2<br>distance={2:.0f} m<br>denivel&eacute;e={3:.0f} m<br><br><i>calculated on {4:}<br>[rev:{5:}]</i>'.format(round(score,0), round(ecart45,0),round(distance45,0),round(uphill,0),now,version)
     type_dict["properties"]=prop_dict
     feat_list.append(type_dict)
 
