@@ -38,7 +38,11 @@ def gpxTracksTo45(gpx_content):
     area=0
     temparea=0
 
-    version='20171810-a-1'
+    type_dict = {}
+    pt_dict = {}
+    prop_dict = {}
+
+    version='20180109-a-3'
     now = datetime.datetime.today().strftime('%Y-%m-%d %H:%M')
 
     # Process the total uphill/downhill elevation for the given track
@@ -82,6 +86,16 @@ def gpxTracksTo45(gpx_content):
             # determine the total distance projected on the 45 parralell
             previous = segment.points[0]
             firstpoint = previous
+            # Add a marker for end of the actual track
+            type_dict["type"]= "Feature"
+            pt_dict["type"]="Point"
+            type_dict["geometry"]=mapping(Point(firstpoint.longitude,firstpoint.latitude))
+            prop_dict["name"]= 'start'
+            prop_dict["popup"]='where the adventure started ...'
+            prop_dict["marker"]='route_start'
+            type_dict["properties"]=prop_dict
+            feat_list.append(type_dict)
+ 
             lastpoint = previous
 
             # First point projected on the 45th line (will be used to build the line)
@@ -132,7 +146,20 @@ def gpxTracksTo45(gpx_content):
                 previous=point
 
     # End looping on points in the track
-     
+
+    # Add a marker for end of the actual track
+    type_dict = {}
+    pt_dict = {}
+    prop_dict = {}
+    type_dict["type"]= "Feature"
+    pt_dict["type"]="Point"
+    type_dict["geometry"]=mapping(Point(lastpoint.longitude,lastpoint.latitude))
+    prop_dict["name"]= 'end'
+    prop_dict["popup"]='where the adventure ended ...'
+    prop_dict["marker"]='route_end'
+    type_dict["properties"]=prop_dict
+    feat_list.append(type_dict)
+ 
     # Calculate distance from first to last (projected on the 45//)
     # Projection of the track on the 45//
 
@@ -156,6 +183,7 @@ def gpxTracksTo45(gpx_content):
         starttime='no datetime<b>found within the track'
     else:
         starttime=firstpoint.time.strftime("%d %b %Y %H:%M")
+
     if lastpoint.time is None:
         endtime='no datetime<b>found within the track'
     else:
@@ -183,6 +211,7 @@ def gpxTracksTo45(gpx_content):
     type_dict["geometry"]=mapping(thelastpoint)
     prop_dict["name"]= 'end'
     prop_dict["popup"]=endtime
+    prop_dict["marker"]='marker45'
     type_dict["properties"]=prop_dict
     feat_list.append(type_dict)
 
@@ -194,6 +223,7 @@ def gpxTracksTo45(gpx_content):
     type_dict["geometry"]=mapping(pointzero)
     prop_dict["name"]= 'start'
     prop_dict["popup"]=starttime
+    prop_dict["marker"]='marker45'
     type_dict["properties"]=prop_dict
     feat_list.append(type_dict)
  

@@ -3,12 +3,43 @@
         {
             "geometry": {
                 "coordinates": [
+                    5.52722845, 
+                    45.03194176
+                ], 
+                "type": "Point"
+            }, 
+            "properties": {
+                "marker": "route_start", 
+                "name": "start", 
+                "popup": "where the adventure started ..."
+            }, 
+            "type": "Feature"
+        }, 
+        {
+            "geometry": {
+                "coordinates": [
+                    5.59540669, 
+                    44.99071
+                ], 
+                "type": "Point"
+            }, 
+            "properties": {
+                "marker": "route_end", 
+                "name": "end", 
+                "popup": "where the adventure ended ..."
+            }, 
+            "type": "Feature"
+        }, 
+        {
+            "geometry": {
+                "coordinates": [
                     5.59540669, 
                     45.0
                 ], 
                 "type": "Point"
             }, 
             "properties": {
+                "marker": "marker45", 
                 "name": "end", 
                 "popup": "15 Oct 2017 11:46"
             }, 
@@ -23,6 +54,7 @@
                 "type": "Point"
             }, 
             "properties": {
+                "marker": "marker45", 
                 "name": "start", 
                 "popup": "14 Oct 2017 09:30"
             }, 
@@ -2966,7 +2998,7 @@
             }, 
             "properties": {
                 "name": "area", 
-                "popup": "<b>score=316 points</b><hr>surface=6185121 m2<br>distance=5358 m<br>denivel&eacute;e=1423 m<br><br><i>calculated on 2017-10-20 14:07<br>[rev:20171810-a-1]</i>"
+                "popup": "<b>score=316 points</b><hr>surface=6185121 m2<br>distance=5358 m<br>denivel&eacute;e=1423 m<br><br><i>calculated on 2018-01-09 11:16<br>[rev:20180109-a-3]</i>"
             }, 
             "type": "Feature"
         }
